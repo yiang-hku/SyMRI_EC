@@ -1,0 +1,124 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+## Notebook
+
+- Record the statistical results for grade, MAGiC Project;
+- Dataset (109 cases) last updated on Dec 09, 2021;
+- Some values are missing; 
+- Excluded cases(artifacts)
+- 004, 016, 023, 034, 063, 079
+
+
+### Statistical Methods
+
+1. Mann-Whitney U test
+
+- test the difference between mean values of two subgroups 
+- for non-normal distribution
+
+2. Kruskal–Wallis test
+
+- test whether the population distributions are identical between two or more subgroups
+- H0: the subgroups are from identical populations
+
+
+### 0. Load dataset from excel
+```{r}
+
+# import required packages
+library(readxl)
+library(ggplot2)
+library(pROC)
+library(stringr)
+library(outliers)
+library(DescTools)
+
+
+# load data from excel
+df1 <- read_excel("./Qvalues_0830.xlsx", sheet = "Sheet1")
+df2 <- read_excel("./Qvalues_0830.xlsx", sheet = "Sheet2")
+
+df <- df1
+df[, 2:9] <- (df1[, 2:9] + df2[, 2:9])/2
+df <- df[complete.cases(df[, c("Grade")]), ]
+
+df_gra1 <- subset(df, Grade == 1)
+df_gra2 <- subset(df, Grade == 2)
+df_gra3 <- subset(df, Grade == 3)
+df_gra23 <- subset(df, Grade > 1)
+df_gra12 <- subset(df, Grade < 3)
+
+
+MedianCI(df_gra1$T1, conf.level = 0.95, na.rm = TRUE)
+MedianCI(df_gra1$T2, conf.level = 0.95, na.rm = TRUE)
+MedianCI(df_gra1$PD, conf.level = 0.95, na.rm = TRUE)
+MedianCI(df_gra1$ADC, conf.level = 0.95, na.rm = TRUE)
+
+MedianCI(df_gra23$T1, conf.level = 0.95, na.rm = TRUE)
+MedianCI(df_gra23$T2, conf.level = 0.95, na.rm = TRUE)
+MedianCI(df_gra23$PD, conf.level = 0.95, na.rm = TRUE)
+MedianCI(df_gra23$ADC, conf.level = 0.95, na.rm = TRUE)
+```
+
+
+```{r T1}
+# boxplot(df$T1 ~ df$Grade)
+kruskal.test(T1 ~ Grade, data = df)
+
+wilcox.test(df_gra1$T1, df_gra2$T1, exact=FALSE)
+wilcox.test(df_gra1$T1, df_gra3$T1, exact=FALSE)
+wilcox.test(df_gra2$T1, df_gra3$T1, exact=FALSE)
+
+wilcox.test(df_gra1$T1, df_gra23$T1, exact=FALSE)
+wilcox.test(df_gra12$T1, df_gra3$T1, exact=FALSE)
+
+
+MedianCI(df_gra1$T1, conf.level = 0.95, na.rm = TRUE)
+MedianCI(df_gra23$T1, conf.level = 0.95, na.rm = TRUE)
+
+```
+
+
+```{r T2}
+# boxplot(df_gra$T2 ~ df_gra$Grade)
+kruskal.test(T2 ~ Grade, data = df)
+
+wilcox.test(df_gra1$T2, df_gra2$T2, exact=FALSE)
+wilcox.test(df_gra1$T2, df_gra3$T2, exact=FALSE)
+wilcox.test(df_gra2$T2, df_gra3$T2, exact=FALSE)
+
+wilcox.test(df_gra1$T2, df_gra23$T2, exact=FALSE)
+wilcox.test(df_gra12$T2, df_gra3$T2, exact=FALSE)
+```
+
+
+```{r PD}
+# boxplot(df_gra$PD ~ df_gra$Grade)
+kruskal.test(PD ~ Grade, data = df)
+
+wilcox.test(df_gra1$PD, df_gra2$PD, exact=FALSE)
+wilcox.test(df_gra1$PD, df_gra3$PD, exact=FALSE)
+wilcox.test(df_gra2$PD, df_gra3$PD, exact=FALSE)
+
+wilcox.test(df_gra1$PD, df_gra23$PD, exact=FALSE)
+wilcox.test(df_gra12$PD, df_gra3$PD, exact=FALSE)
+```
+
+
+```{r ADC}
+# boxplot(df_gra$ADC ~ df_gra$Grade)
+kruskal.test(ADC ~ Grade, data = df)
+
+wilcox.test(df_gra1$ADC, df_gra2$ADC, exact=FALSE)
+wilcox.test(df_gra1$ADC, df_gra3$ADC, exact=FALSE)
+wilcox.test(df_gra2$ADC, df_gra3$ADC, exact=FALSE)
+
+wilcox.test(df_gra1$ADC, df_gra23$ADC, exact=FALSE)
+wilcox.test(df_gra12$ADC, df_gra3$ADC, exact=FALSE)
+```
+
+
+

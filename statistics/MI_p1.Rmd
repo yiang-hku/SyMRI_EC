@@ -1,0 +1,182 @@
+---
+title: "Results of MAGiC for MI, part 1"
+output: html_notebook
+---
+
+Last modified: 08/30/2021; 
+
+## Notebook
+
+- Record the statistical results for grade, MAGiC Project;
+- Dataset (109 cases) last updated on Dec 09, 2021;
+- Some values are missing; 
+- Excluded cases(artifacts)
+- 004, 016, 023, 034, 063, 079
+
+
+### Statistical Methods
+
+1. Mann-Whitney U test
+
+- test the difference between mean values of two subgroups 
+- for non-normal distribution
+
+2. Kruskal–Wallis test
+
+- test whether the population distributions are identical between two or more subgroups
+- H0: the subgroups are from identical populations
+
+
+### 0. Load dataset from excel
+```{r}
+
+# import required packages
+library(readxl)
+library(ggplot2)
+library(pROC)
+library(stringr)
+library(outliers)
+library(DescTools)
+
+# load data from excel
+df1 <- read_excel("./Qvalues_0830.xlsx", sheet = "Sheet1")
+df2 <- read_excel("./Qvalues_0830.xlsx", sheet = "Sheet2")
+
+df <- df1
+df[, 2:9] <- (df1[, 2:9] + df2[, 2:9])/2
+
+df <- df[complete.cases(df[, c("MI")]), ]
+
+df_MI_1 <- subset(df, MI == 0)
+df_MI_2 <- subset(df, MI == 1)
+df_MI_3 <- subset(df, MI == 2)
+df_MI_23 <- subset(df, MI > 0)
+df_MI_12 <- subset(df, MI < 2)
+
+```
+
+
+```{r}
+MedianCI(df_MI_1$T1, conf.level = 0.95, na.rm = TRUE)
+MedianCI(df_MI_1$T2, conf.level = 0.95, na.rm = TRUE)
+MedianCI(df_MI_1$PD, conf.level = 0.95, na.rm = TRUE)
+MedianCI(df_MI_1$ADC, conf.level = 0.95, na.rm = TRUE)
+```
+
+
+```{r}
+MedianCI(df_MI_2$T1, conf.level = 0.95, na.rm = TRUE)
+MedianCI(df_MI_2$T2, conf.level = 0.95, na.rm = TRUE)
+MedianCI(df_MI_2$PD, conf.level = 0.95, na.rm = TRUE)
+MedianCI(df_MI_2$ADC, conf.level = 0.95, na.rm = TRUE)
+```
+
+
+```{r}
+MedianCI(df_MI_3$T1, conf.level = 0.95, na.rm = TRUE)
+MedianCI(df_MI_3$T2, conf.level = 0.95, na.rm = TRUE)
+MedianCI(df_MI_3$PD, conf.level = 0.95, na.rm = TRUE)
+MedianCI(df_MI_3$ADC, conf.level = 0.95, na.rm = TRUE)
+```
+
+
+
+```{r T1}
+# boxplot(df_T1$T1 ~ df_T1$MI)
+kruskal.test(T1 ~ MI, data = df)
+print("--------------------------")
+
+# test of normal distribution 
+# (if p<0.05, reject null hypothesis, non-normal distribution)
+shapiro.test(df$T1)
+shapiro.test(df_MI_1$T1)
+shapiro.test(df_MI_2$T1)
+shapiro.test(df_MI_3$T1)
+shapiro.test(df_MI_12$T1)
+shapiro.test(df_MI_23$T1)
+print("--------------------------")
+
+wilcox.test(df_MI_1$T1, df_MI_2$T1, exact=FALSE)
+wilcox.test(df_MI_1$T1, df_MI_3$T1, exact=FALSE)
+wilcox.test(df_MI_2$T1, df_MI_3$T1, exact=FALSE)
+print("--------------------------")
+
+
+wilcox.test(df_MI_1$T1, df_MI_23$T1, exact=FALSE)
+wilcox.test(df_MI_12$T1, df_MI_3$T1, exact=FALSE)
+```
+
+
+```{r T2}
+#boxplot(df_T2$T2 ~ df_T2$MI)
+kruskal.test(T2 ~ MI, data = df)
+
+# test of normal distribution 
+# (if p<0.05, reject null hypothesis, non-normal distribution)
+shapiro.test(df$T2)
+shapiro.test(df_MI_1$T2)
+shapiro.test(df_MI_2$T2)
+shapiro.test(df_MI_3$T2)
+shapiro.test(df_MI_12$T2)
+shapiro.test(df_MI_23$T2)
+print("--------------------------")
+
+wilcox.test(df_MI_1$T2, df_MI_2$T2, exact=FALSE)
+wilcox.test(df_MI_1$T2, df_MI_3$T2, exact=FALSE)
+wilcox.test(df_MI_2$T2, df_MI_3$T2, exact=FALSE)
+print("--------------------------")
+
+
+wilcox.test(df_MI_1$T2, df_MI_23$T2, exact=FALSE)
+wilcox.test(df_MI_12$T2, df_MI_3$T2, exact=FALSE)
+```
+
+
+```{r PD}
+#boxplot(df_MI$PD ~ df_MI$MI)
+kruskal.test(PD ~ MI, data = df)
+
+# test of normal distribution 
+# (if p<0.05, reject null hypothesis, non-normal distribution)
+shapiro.test(df$PD)
+shapiro.test(df_MI_1$PD)
+shapiro.test(df_MI_2$PD)
+shapiro.test(df_MI_3$PD)
+shapiro.test(df_MI_12$PD)
+shapiro.test(df_MI_23$PD)
+print("--------------------------")
+
+wilcox.test(df_MI_1$PD, df_MI_2$PD, exact=FALSE)
+wilcox.test(df_MI_1$PD, df_MI_3$PD, exact=FALSE)
+wilcox.test(df_MI_2$PD, df_MI_3$PD, exact=FALSE)
+print("--------------------------")
+
+wilcox.test(df_MI_1$PD, df_MI_23$PD, exact=FALSE)
+wilcox.test(df_MI_12$PD, df_MI_3$PD, exact=FALSE)
+```
+
+
+```{r ADC}
+# boxplot(df_ADC$ADC ~ df_ADC$MI)
+kruskal.test(ADC ~ MI, data = df)
+
+# test of normal distribution 
+# (if p<0.05, reject null hypothesis, non-normal distribution)
+shapiro.test(df$ADC)
+shapiro.test(df_MI_1$ADC)
+shapiro.test(df_MI_2$ADC)
+shapiro.test(df_MI_3$ADC)
+shapiro.test(df_MI_12$ADC)
+shapiro.test(df_MI_23$ADC)
+print("--------------------------")
+
+wilcox.test(df_MI_1$ADC, df_MI_2$ADC, exact=FALSE)
+wilcox.test(df_MI_1$ADC, df_MI_3$ADC, exact=FALSE)
+wilcox.test(df_MI_2$ADC, df_MI_3$ADC, exact=FALSE)
+
+wilcox.test(df_MI_1$ADC, df_MI_23$ADC, exact=FALSE)
+wilcox.test(df_MI_12$ADC, df_MI_3$ADC, exact=FALSE)
+```
+
+
+

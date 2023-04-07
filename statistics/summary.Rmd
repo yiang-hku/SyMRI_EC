@@ -1,0 +1,99 @@
+---
+title: "Summary of the dataset"
+output: html_notebook
+---
+
+## Notebook
+
+- Record the statistical results for grade, MAGiC Project;
+- Dataset (109 cases) last updated on Dec 09, 2021;
+- Some values are missing; 
+- Excluded cases(artifacts)
+- 004, 016, 023, 034, 063, 079
+
+
+### Statistical Methods
+
+1. Mann-Whitney U test
+
+- test the difference between mean values of two subgroups 
+- for non-normal distribution
+
+2. Kruskal–Wallis test
+
+- test whether the population distributions are identical between two or more subgroups
+- H0: the subgroups are from identical populations
+
+
+### 0. Load dataset from excel
+```{r}
+
+library(readxl)
+library(ggplot2)
+library(pROC)
+library(stringr)
+library(outliers)
+library(psych)
+library(irr)
+
+
+# load data from excel
+df1 <- read_excel("./Qvalues_0830.xlsx", sheet = "Sheet1")
+df2 <- read_excel("./Qvalues_0830.xlsx", sheet = "Sheet2")
+
+df <- df1
+# average results from two reviewers
+df[, 2:9] <- (df1[, 2:9] + df2[, 2:9])/2
+```
+
+
+```{r}
+df_T1 <- data.frame(R1=df1$T1, R2=df2$T1)
+ICC(df_T1)
+icc(df_T1, model = c("twoway"), type = c("agreement"), unit = c("average"))
+```
+
+
+```{r}
+df_T2 <- data.frame(R1=df1$T2, R2=df2$T2)
+ICC(df_T2)
+icc(df_T2, model = c("twoway"), type = c("agreement"), unit = c("average"))
+```
+
+```{r}
+df_PD <- data.frame(R1=df1$PD, R2=df2$PD)
+ICC(df_PD)
+icc(df_PD, model = c("twoway"), type = c("agreement"), unit = c("average"))
+```
+
+
+```{r}
+df_ADC <- data.frame(R1=df1$ADC, R2=df2$ADC)
+ICC(df_ADC)
+icc(df_ADC, model = c("twoway"), type = c("agreement"), unit = c("average"))
+```
+
+
+
+
+```{r}
+summary_def <- function(x,na.omit=FALSE){
+                         if(na.omit)
+                          x <- x[!is.na(x)]
+                         m <- mean(x)
+                         n <- length(x)
+                         s <- sd(x)
+                         min_x <- min(x)
+                         max_x <- max(x)
+                         return(c(n=n,mean=m,stdev=s,min=min_x,max=max_x))}
+
+sapply(df[c("T1")], summary_def)
+sapply(df[c("T2")], summary_def)
+sapply(df[c("PD")], summary_def)
+sapply(df[c("ADC")], summary_def)
+```
+
+``` {r}
+mean(df$age)
+sd(df$age)
+```
