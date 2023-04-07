@@ -1,0 +1,218 @@
+---
+title: "Results of MAGiC"
+output: html_notebook
+---
+
+Last modified: 04/13/2021; 
+
+## Notebook
+
+- Draw boxplot figure for manuscript; 
+- Dataset (81 cases in total) last updated on Jan 9, 2021;
+- Some values are missing; 
+
+
+
+### 0. Load dataset from excel
+```{r load data, message=TRUE, warning=TRUE, paged.print=TRUE}
+
+# import required packages
+library(readxl)
+library(ggplot2)
+library(pROC)
+library(stringr)
+library(latex2exp)
+library(ggpubr)
+library(grid)
+
+
+# load data from excel
+df1 <- read_excel("./Qvalues_0830.xlsx", sheet = "Sheet1")
+df2 <- read_excel("./Qvalues_0830.xlsx", sheet = "Sheet2")
+
+df <- df1
+df[, 2:9] <- (df1[, 2:9] + df2[, 2:9])/2
+df[, c("ADC")] = df[, c("ADC")] * 0.001
+```
+
+
+```{r }
+df_MI <- df[complete.cases(df[, c("MI")]), ]
+# devide grade into no MI and MI
+# add a new column
+df_MI = transform(df_MI, MI2=0)
+# pick out cases with MI
+list_MI = which(df_MI$MI > 0); 
+# no MI: 0; MI: 1;
+df_MI[list_MI, 'MI2'] = 1 
+
+df_MI$MI2 = as.factor(df_MI$MI2)
+```
+
+
+```{r }
+df_gra <- df[complete.cases(df[, c("Grade")]), ]
+# devide grade into G1, G2-G3
+# add a new column gra2
+df_gra = transform(df_gra, gra2=0)
+# pick out cases with G2-G3
+list_gra = which(df_gra$Grade > 1); 
+# G1: 0; G2-G3: 1;
+df_gra[list_gra, 'gra2'] = 1 
+
+df_gra$gra2 = as.factor(df_gra$gra2)
+```
+
+
+```{r }
+df_LVSI <- df[complete.cases(df[, c("LVSI")]), ]
+df_LVSI$LVSI = as.factor(df_LVSI$LVSI)
+```
+
+
+```{r }
+# create a text
+text1 <- grobTree(textGrob("(d)", x=0.01,  y=0.95, hjust=0,
+  gp=gpar(col="red", fontsize=20)))
+
+text2 <- grobTree(textGrob("(b)", x=0.01,  y=0.95, hjust=0,
+  gp=gpar(col="red", fontsize=20)))
+
+ggplot(df_gra, aes(x=gra2, y=PD, fill=gra2)) + geom_boxplot() + 
+annotation_custom(text1) +
+labs(x = 'Grade', y = TeX('PD (pu)')) +
+scale_x_discrete(labels = c('0'='G1', '1'='G2-3')) + 
+theme(legend.position="none") + 
+stat_compare_means(comparisons = list(c("0", "1"))) 
+
+ggplot(df_gra, aes(x=gra2, y=ADC, fill=gra2)) + geom_boxplot() + 
+annotation_custom(text2) +
+labs(x = 'Grade', y = TeX('ADC ($10^{-3} mm^{2}/s$)')) +
+scale_x_discrete(labels = c('0'='G1', '1'='G2-3')) + 
+theme(legend.position="none") + 
+stat_compare_means(comparisons = list(c("0", "1")))
+```
+
+
+
+3. MI
+```{r}
+text3 <- grobTree(textGrob("(e)", x=0.01,  y=0.95, hjust=0,
+  gp=gpar(col="red", fontsize=20)))
+text4 <- grobTree(textGrob("(c)", x=0.01,  y=0.95, hjust=0,
+  gp=gpar(col="red", fontsize=20)))
+text5 <- grobTree(textGrob("(a)", x=0.01,  y=0.95, hjust=0,
+  gp=gpar(col="red", fontsize=20)))
+
+ggplot(df_MI, aes(x=MI2, y=T2, fill=MI2)) + geom_boxplot() + 
+annotation_custom(text3) +
+labs(x = 'MI', y = TeX('T2 (ms)')) +
+scale_x_discrete(labels = c('0'='no MI', '1'='MI')) + 
+theme(legend.position="none") + 
+stat_compare_means(comparisons = list(c("0", "1")))
+
+ggplot(df_MI, aes(x=MI2, y=PD, fill=MI2)) + geom_boxplot() + 
+annotation_custom(text4) +
+labs(x = 'MI', y = TeX('PD (pu)')) +
+scale_x_discrete(labels = c('0'='no MI', '1'='MI')) + 
+theme(legend.position="none") + 
+stat_compare_means(comparisons = list(c("0", "1")))
+
+ggplot(df_MI, aes(x=MI2, y=ADC, fill=MI2)) + geom_boxplot() + 
+annotation_custom(text5) +
+labs(x = 'MI', y = TeX('ADC ($10^{-3} mm^{2}/s$)')) +
+scale_x_discrete(labels = c('0'='no MI', '1'='MI')) + 
+theme(legend.position="none") + 
+stat_compare_means(comparisons = list(c("0", "1")))
+```
+
+```{r}
+p1 <- ggplot(df_gra, aes(x=gra2, y=ADC, fill=MI2)) + geom_boxplot() + 
+annotation_custom(text1) +
+labs(x = 'MI', y = TeX('ADC ($10^{-3} mm^{2}/s$)')) +
+scale_x_discrete(labels = c('0'='no MI', '1'='MI')) + 
+theme(legend.position="none") + 
+stat_compare_means(comparisons = list(c("0", "1")))
+
+p2 <- ggplot(df_gra, aes(x=gra2, y=ADC, fill=gra2)) + geom_boxplot() + 
+annotation_custom(text2) +
+labs(x = 'Grade', y = TeX('ADC ($10^{-3} mm^{2}/s$)')) +
+scale_x_discrete(labels = c('0'='G1', '1'='G2-3')) + 
+theme(axis.text.y = element_blank(),
+                     axis.ticks.y = element_blank(),
+                     axis.title.y = element_blank(), 
+      legend.position="none") + 
+scale_y_continuous(breaks = seq(0.75, 2.0, by = 0.25))
+stat_compare_means(comparisons = list(c("0", "1")))
+
+p_adc <- ggarrange(p1, p2, nrow = 1)
+p_adc
+```
+
+```{r}
+p3 <- ggplot(df_MI, aes(x=MI2, y=PD, fill=MI2)) + geom_boxplot() + 
+annotation_custom(text3) +
+labs(x = 'MI', y = TeX('PD (pu)')) +
+scale_x_discrete(labels = c('0'='no MI', '1'='MI')) + 
+theme(legend.position="none") + 
+stat_compare_means(comparisons = list(c("0", "1")))
+
+p4 <- ggplot(df_gra, aes(x=gra2, y=PD, fill=gra2)) + geom_boxplot() + 
+annotation_custom(text4) +
+labs(x = 'Grade', y = TeX('PD (pu)')) +
+scale_x_discrete(labels = c('0'='G1', '1'='G2-3')) + 
+theme(legend.position="none") + 
+stat_compare_means(comparisons = list(c("0", "1"))) 
+
+p_PD <- ggarrange(p3, p4, nrow = 1)
+p_PD
+```
+
+```{r}
+library(rstatix)
+library(extrafont)
+loadfonts(device = "win")
+
+scaleFUN <- function(x) sprintf("%.2f", x)
+p1 <- ggplot(df_MI, aes(x=MI2, y=T2, fill=MI2)) + geom_boxplot() +
+labs(x = 'MI', y = TeX('T2 (ms)')) +
+scale_x_discrete(labels = c('0'='no MI', '1'='MI')) +
+theme(legend.position="none", text = element_text(family = "serif")) +
+stat_compare_means(aes(label = sprintf("p = %5.3f", as.numeric(..p.format..))))
+
+p2 <- ggplot(df_MI, aes(x=MI2, y=PD, fill=MI2)) + geom_boxplot() +
+labs(x = 'MI', y = TeX('PD (pu)')) +
+scale_x_discrete(labels = c('0'='no MI', '1'='MI')) +
+theme(legend.position="none", text = element_text(family = "serif")) +
+stat_compare_means(aes(label = sprintf("p = %5.3f", as.numeric(..p.format..))))
+
+p3 <- ggplot(df_MI, aes(x=MI2, y=ADC, fill=MI2)) + geom_boxplot() +
+labs(x = 'MI', y = TeX('ADC ($10^{-3} mm^{2}/s$)')) +
+scale_x_discrete(labels = c('0'='no MI', '1'='MI')) +
+theme(legend.position="none", text = element_text(family = "serif")) +
+stat_compare_means(aes(label = sprintf("p = %5.3f", as.numeric(..p.format..))))
+
+p4 <- ggplot(df_gra, aes(x=gra2, y=ADC, fill=gra2)) + geom_boxplot() +
+labs(x = 'Grade', y = TeX('ADC ($10^{-3} mm^{2}/s$)')) +
+scale_x_discrete(labels = c('0'='G1', '1'='G2-3')) +
+theme(legend.position="none", text = element_text(family = "serif")) +
+stat_compare_means(aes(label = sprintf("p = %5.3f", as.numeric(..p.format..))))
+
+p5 <- ggplot(df_LVSI, aes(x=LVSI, y=ADC, fill=LVSI)) + geom_boxplot() +
+labs(x = 'LVSI', y = TeX('ADC ($10^{-3} mm^{2}/s$)')) +
+scale_x_discrete(labels = c('0'='absent', '1'='present')) +
+theme(legend.position="none", text = element_text(family = "serif")) +
+stat_compare_means(aes(label = sprintf("p = %5.3f", as.numeric(..p.format..))))
+
+ggarrange(p1, p2, p3, nrow = 1, labels = c("a", "b", "c"), 
+          font.label = list(family = "serif"))
+ggsave("fig2.tiff", units="mm", width = 140, height = 88, dpi = 600, 
+       compression="lzw")
+#ggarrange(ggplot() + theme_void(), p4, p5, nrow = 1, labels = c("", "c", "d"))
+ggarrange(p4, p5, nrow = 1, labels = c("a", "b"), 
+          font.label = list(family = "serif"))
+ggsave("fig3.tiff", units="mm", width = 90, height = 88, dpi = 600, 
+       compression="lzw")
+  
+```
+
