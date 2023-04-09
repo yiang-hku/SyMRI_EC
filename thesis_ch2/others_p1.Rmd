@@ -1,0 +1,204 @@
+---
+title: "Results of MAGiC for CSI, LVSI and risks, part 1"
+output: html_notebook
+---
+
+Last modified: 08/30/2021; 
+
+## Notebook
+
+- Record the statistical results for grade, MAGiC Project;
+- Dataset (109 cases) last updated on Dec 09, 2021;
+- Some values are missing; 
+- Excluded cases(artifacts)
+- 004, 016, 023, 034, 063, 079
+- High risk definition: https://www.medilib.ir/uptodate/show/16721
+
+### Statistical Methods
+
+1. Mann-Whitney U test
+
+- test the difference between mean values of two subgroups 
+- for non-normal distribution
+
+2. Kruskal–Wallis test
+
+- test whether the population distributions are identical between two or more subgroups
+- H0: the subgroups are from identical populations
+
+
+### 0. Load dataset from excel
+```{r load data}
+# import required packages
+library(readxl)
+library(ggplot2)
+library(pROC)
+library(stringr)
+library(outliers)
+library(DescTools)
+
+
+df1 <- read_excel("./Qvalues_0830.xlsx", sheet = "Sheet1")
+df2 <- read_excel("./Qvalues_0830.xlsx", sheet = "Sheet2")
+
+df <- df1
+df[, 2:9] <- (df1[, 2:9] + df2[, 2:9])/2
+
+```
+
+
+```{r}
+# add a new column recording risk
+df_risk = transform(df, risk=0)
+# pick out cases with high risk
+list_high = which(df$Histology == 2 | df$Histology == 3 | (df$Grade == 3 & df$MI == 2 & df$Histology == 1) | df$stage == '3a' | df$stage == '3b' | df$stage == '3c1' | df$stage == '3c2' | df$stage == '4' | df$stage == '3'); 
+
+# cases with low risk: supplementary set
+list_low = setdiff(c(1:nrow(df)), list_high)
+# low risk: 0; high risk: 1;
+df_risk[list_high, 'risk'] = 1 
+```
+
+
+```{r}
+# 2nd risk definition
+# add a new column recording risk
+df_risk = transform(df, risk=0)
+# pick out cases with low risk
+list_low = which(df$Histology == 1 & df$Grade !=3  & df$CSI == 0 & df$LVSI == 0 & df$MI != 2); 
+
+# cases with low risk: supplementary set
+list_high = setdiff(c(1:nrow(df)), list_low)
+# low risk: 0; high risk: 1;
+df_risk[list_high, 'risk'] = 1 
+```
+
+
+```{r T1}
+# remove rows with NA and others in CSI & T1 column
+df_CSI <- df[complete.cases(df[, c("T1", "CSI")]), ]
+# boxplot(df_CSI$T1 ~ df_CSI$CSI)
+wilcox.test(T1~CSI, data = df_CSI, exact=FALSE)
+df_CSI1 <- subset(df_CSI, CSI == 0)
+df_CSI2 <- subset(df_CSI, CSI == 1)
+
+
+MedianCI(df_CSI1$T1, conf.level = 0.95, na.rm = TRUE)
+MedianCI(df_CSI2$T1, conf.level = 0.95, na.rm = TRUE)
+
+
+# remove rows with NA and others in LVSI & T1 column
+df_LVSI <- df[complete.cases(df[, c("T1", "LVSI")]), ]
+# boxplot(df_LVSI$T1 ~ df_LVSI$LVSI)
+wilcox.test(T1~LVSI, data = df_LVSI, exact=FALSE)
+df_LVSI1 <- subset(df_LVSI, LVSI == 0)
+df_LVSI2 <- subset(df_LVSI, LVSI == 1)
+
+MedianCI(df_LVSI1$T1, conf.level = 0.95, na.rm = TRUE)
+MedianCI(df_LVSI2$T1, conf.level = 0.95, na.rm = TRUE)
+
+
+df_risk <- df_risk[complete.cases(df_risk[, c("T1", "risk")]), ]
+df_risk1 <- subset(df_risk, risk == 0)
+df_risk2 <- subset(df_risk, risk == 1)
+
+wilcox.test(df_risk1$T1, df_risk2$T1, exact=FALSE)
+MedianCI(df_risk1$T1, conf.level = 0.95, na.rm = TRUE)
+MedianCI(df_risk2$T1, conf.level = 0.95, na.rm = TRUE)
+```
+
+
+```{r T2}
+# remove rows with NA and others in CSI & T2 column
+df_CSI <- df[complete.cases(df[, c("T2", "CSI")]), ]
+# boxplot(df_CSI$T2 ~ df_CSI$CSI)
+wilcox.test(T2~CSI, data = df_CSI, exact=FALSE)
+df_CSI1 <- subset(df_CSI, CSI == 0)
+df_CSI2 <- subset(df_CSI, CSI == 1)
+
+MedianCI(df_CSI1$T2, conf.level = 0.95, na.rm = TRUE)
+MedianCI(df_CSI2$T2, conf.level = 0.95, na.rm = TRUE)
+
+
+# remove rows with NA and others in LVSI & T2 column
+df_LVSI <- df[complete.cases(df[, c("T2", "LVSI")]), ]
+# boxplot(df_LVSI$T2 ~ df_LVSI$LVSI)
+wilcox.test(T2~LVSI, data = df_LVSI, exact=FALSE)
+df_LVSI1 <- subset(df_LVSI, LVSI == 0)
+df_LVSI2 <- subset(df_LVSI, LVSI == 1)
+
+MedianCI(df_LVSI1$T2, conf.level = 0.95, na.rm = TRUE)
+MedianCI(df_LVSI2$T2, conf.level = 0.95, na.rm = TRUE)
+
+
+df_risk <- df_risk[complete.cases(df_risk[, c("T2", "risk")]), ]
+df_risk1 <- subset(df_risk, risk == 0)
+df_risk2 <- subset(df_risk, risk == 1)
+
+wilcox.test(df_risk1$T2, df_risk2$T2, exact=FALSE)
+MedianCI(df_risk1$T2, conf.level = 0.95, na.rm = TRUE)
+MedianCI(df_risk2$T2, conf.level = 0.95, na.rm = TRUE)
+```
+
+
+```{r PD}
+# remove rows with NA and others in CSI & PD column
+df_CSI <- df[complete.cases(df[, c("PD", "CSI")]), ]
+# boxplot(df_CSI$PD ~ df_CSI$CSI)
+wilcox.test(PD~CSI, data = df_CSI, exact=FALSE)
+print("--------------------------")
+df_CSI1 <- subset(df_CSI, CSI == 0)
+df_CSI2 <- subset(df_CSI, CSI == 1)
+MedianCI(df_CSI1$PD, conf.level = 0.95, na.rm = TRUE)
+MedianCI(df_CSI2$PD, conf.level = 0.95, na.rm = TRUE)
+
+
+# remove rows with NA and others in LVSI & PD column
+df_LVSI <- df[complete.cases(df[, c("PD", "LVSI")]), ]
+# boxplot(df_LVSI$PD ~ df_LVSI$LVSI)
+wilcox.test(PD~LVSI, data = df_LVSI, exact=FALSE)
+df_LVSI1 <- subset(df_LVSI, LVSI == 0)
+df_LVSI2 <- subset(df_LVSI, LVSI == 1)
+MedianCI(df_LVSI1$PD, conf.level = 0.95, na.rm = TRUE)
+MedianCI(df_LVSI2$PD, conf.level = 0.95, na.rm = TRUE)
+
+
+df_risk <- df_risk[complete.cases(df_risk[, c("PD", "risk")]), ]
+df_risk1 <- subset(df_risk, risk == 0)
+df_risk2 <- subset(df_risk, risk == 1)
+
+wilcox.test(df_risk1$PD, df_risk2$PD, exact=FALSE)
+MedianCI(df_risk1$PD, conf.level = 0.95, na.rm = TRUE)
+MedianCI(df_risk2$PD, conf.level = 0.95, na.rm = TRUE)
+```
+
+
+```{r ADC}
+# remove rows with NA and others in CSI & ADC column
+df_CSI <- df[complete.cases(df[, c("ADC", "CSI")]), ]
+# boxplot(df_CSI$ADC ~ df_CSI$CSI)
+wilcox.test(ADC~CSI, data = df_CSI, exact=FALSE)
+df_CSI1 <- subset(df_CSI, CSI == 0)
+df_CSI2 <- subset(df_CSI, CSI == 1)
+MedianCI(df_CSI1$ADC, conf.level = 0.95, na.rm = TRUE)
+MedianCI(df_CSI2$ADC, conf.level = 0.95, na.rm = TRUE)
+
+
+# remove rows with NA and others in LVSI & ADC column
+df_LVSI <- df[complete.cases(df[, c("ADC", "LVSI")]), ]
+# boxplot(df_LVSI$ADC ~ df_LVSI$LVSI)
+wilcox.test(ADC~LVSI, data = df_LVSI, exact=FALSE)
+df_LVSI1 <- subset(df_LVSI, LVSI == 0)
+df_LVSI2 <- subset(df_LVSI, LVSI == 1)
+MedianCI(df_LVSI1$ADC, conf.level = 0.95, na.rm = TRUE)
+MedianCI(df_LVSI2$ADC, conf.level = 0.95, na.rm = TRUE)
+
+
+df_risk <- df_risk[complete.cases(df_risk[, c("ADC", "risk")]), ]
+df_risk1 <- subset(df_risk, risk == 0)
+df_risk2 <- subset(df_risk, risk == 1)
+
+wilcox.test(df_risk1$ADC, df_risk2$ADC, exact=FALSE)
+MedianCI(df_risk1$ADC, conf.level = 0.95, na.rm = TRUE)
+MedianCI(df_risk2$ADC, conf.level = 0.95, na.rm = TRUE)
+```

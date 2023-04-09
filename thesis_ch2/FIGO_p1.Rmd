@@ -1,0 +1,128 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+## Notebook
+
+- Record the statistical results for FIGO, MAGiC Project;
+- Dataset (109 cases) last updated on Dec 09, 2021;
+- Some values are missing; 
+- Excluded cases(artifacts)
+- 004, 016, 023, 034, 063, 079
+
+
+### Statistical Methods
+
+1. Mann-Whitney U test
+
+- test the difference between mean values of two subgroups 
+- for non-normal distribution
+
+2. Kruskal–Wallis test
+
+- test whether the population distributions are identical between two or more subgroups
+- H0: the subgroups are from identical populations
+
+
+### 0. Load dataset from excel
+```{r}
+# import required packages
+library(readxl)
+library(ggplot2)
+library(pROC)
+library(stringr)
+library(outliers)
+library(DescTools)
+
+
+# load data from excel
+df1 <- read_excel("./Qvalues_0830.xlsx", sheet = "Sheet1")
+df2 <- read_excel("./Qvalues_0830.xlsx", sheet = "Sheet2")
+
+df <- df1
+df[, 2:9] <- (df1[, 2:9] + df2[, 2:9])/2
+df$FIGO3 <- str_replace_all(df$stage, c("3a" = "o", "3b" = "o", "3c1" = "o", "3c2" = "o", "4" = "o", "2" = "o", "3" = "o"))
+df <- df[complete.cases(df[, c("FIGO3")]), ]
+
+df_figo1 <- subset(df, FIGO3 == '1a')
+df_figo2 <- subset(df, FIGO3 == '1b')
+df_figo3 <- subset(df, FIGO3 == 'o')
+df_figo23 <- subset(df, FIGO3 != '1a')
+df_figo12 <- subset(df, FIGO3 != 'o')
+```
+
+
+```{r}
+MedianCI(df_figo1$T1, conf.level = 0.95, na.rm = TRUE)
+MedianCI(df_figo1$T2, conf.level = 0.95, na.rm = TRUE)
+MedianCI(df_figo1$PD, conf.level = 0.95, na.rm = TRUE)
+MedianCI(df_figo1$ADC, conf.level = 0.95, na.rm = TRUE)
+
+MedianCI(df_figo2$T1, conf.level = 0.95, na.rm = TRUE)
+MedianCI(df_figo2$T2, conf.level = 0.95, na.rm = TRUE)
+MedianCI(df_figo2$PD, conf.level = 0.95, na.rm = TRUE)
+MedianCI(df_figo2$ADC, conf.level = 0.95, na.rm = TRUE)
+
+MedianCI(df_figo3$T1, conf.level = 0.95, na.rm = TRUE)
+MedianCI(df_figo3$T2, conf.level = 0.95, na.rm = TRUE)
+MedianCI(df_figo3$PD, conf.level = 0.95, na.rm = TRUE)
+MedianCI(df_figo3$ADC, conf.level = 0.95, na.rm = TRUE)
+
+```
+
+
+```{r T1}
+
+kruskal.test(T1 ~ FIGO3, data = df)
+
+wilcox.test(df_figo1$T1, df_figo2$T1, exact=FALSE)
+wilcox.test(df_figo1$T1, df_figo3$T1, exact=FALSE)
+wilcox.test(df_figo2$T1, df_figo3$T1, exact=FALSE)
+
+wilcox.test(df_figo1$T1, df_figo23$T1, exact=FALSE)
+wilcox.test(df_figo12$T1, df_figo3$T1, exact=FALSE)
+
+```
+
+
+```{r T2}
+
+kruskal.test(T2 ~ FIGO3, data = df)
+
+wilcox.test(df_figo1$T2, df_figo2$T2, exact=FALSE)
+wilcox.test(df_figo1$T2, df_figo3$T2, exact=FALSE)
+wilcox.test(df_figo2$T2, df_figo3$T2, exact=FALSE)
+
+wilcox.test(df_figo1$T2, df_figo23$T2, exact=FALSE)
+wilcox.test(df_figo12$T2, df_figo3$T2, exact=FALSE)
+```
+
+
+```{r PD}
+
+kruskal.test(PD ~ FIGO3, data = df)
+
+wilcox.test(df_figo1$PD, df_figo2$PD, exact=FALSE)
+wilcox.test(df_figo1$PD, df_figo3$PD, exact=FALSE)
+wilcox.test(df_figo2$PD, df_figo3$PD, exact=FALSE)
+
+wilcox.test(df_figo1$PD, df_figo23$PD, exact=FALSE)
+wilcox.test(df_figo12$PD, df_figo3$PD, exact=FALSE)
+```
+
+
+```{r ADC}
+
+kruskal.test(ADC ~ FIGO3, data = df)
+
+wilcox.test(df_figo1$ADC, df_figo2$ADC, exact=FALSE)
+wilcox.test(df_figo1$ADC, df_figo3$ADC, exact=FALSE)
+wilcox.test(df_figo2$ADC, df_figo3$ADC, exact=FALSE)
+
+wilcox.test(df_figo1$ADC, df_figo23$ADC, exact=FALSE)
+wilcox.test(df_figo12$ADC, df_figo3$ADC, exact=FALSE)
+```
+
+
+
